@@ -1,0 +1,2247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade Log — Secure Trading Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.35.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{
+    --bg:#11141A;
+    --bg-elev:#171B22;
+    --bg-elev-2:#1D222B;
+    --border:#272D38;
+    --border-soft:#1F242D;
+    --text:#E7E9ED;
+    --text-mute:#8B93A1;
+    --text-faint:#5C6472;
+    --accent:#4C8DFF;
+    --profit:#2BA66C;
+    --profit-bg:rgba(43,166,108,0.12);
+    --loss:#E0524D;
+    --loss-bg:rgba(224,82,77,0.12);
+    --open:#D9A441;
+    --open-bg:rgba(217,164,65,0.12);
+    --radius:10px;
+    --radius-sm:6px;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* LOGIN PAGE */
+  .login-page{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:var(--bg);
+    z-index:1000;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .login-page.show{display:flex;}
+  .login-container{
+    background:var(--bg-elev);
+    border:1px solid var(--border-soft);
+    border-radius:14px;
+    padding:40px;
+    max-width:400px;
+    width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  }
+  .login-logo{
+    text-align:center;
+    margin-bottom:30px;
+  }
+  .login-logo .mark{
+    width:48px;
+    height:48px;
+    border-radius:12px;
+    background:linear-gradient(180deg,var(--bg-elev-2),var(--bg));
+    border:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:20px;
+    color:var(--accent);
+    margin:0 auto 16px;
+  }
+  .login-logo h1{
+    font-size:24px;
+    font-weight:600;
+    margin:0;
+  }
+  .login-logo .sub{
+    font-size:12px;
+    color:var(--text-faint);
+    margin-top:4px;
+  }
+  .form-group{
+    margin-bottom:20px;
+  }
+  .form-group label{
+    display:block;
+    font-size:12px;
+    font-weight:500;
+    color:var(--text-mute);
+    margin-bottom:8px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .form-group input{
+    width:100%;
+    background:var(--bg-elev-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    font-size:14px;
+    outline:none;
+    transition:border-color .2s;
+  }
+  .form-group input:focus{
+    border-color:var(--accent);
+  }
+  .form-group input::placeholder{
+    color:var(--text-faint);
+  }
+  .btn-login{
+    width:100%;
+    background:var(--accent);
+    color:#0A0E14;
+    border:none;
+    border-radius:var(--radius-sm);
+    padding:12px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .2s;
+    font-family:var(--sans);
+  }
+  .btn-login:hover{background:#5f9aff;}
+  .btn-login:disabled{opacity:0.5;cursor:not-allowed;}
+  .login-status{
+    font-size:12px;
+    color:var(--text-faint);
+    text-align:center;
+    margin-top:12px;
+    min-height:16px;
+  }
+  .login-status.success{color:var(--profit);}
+  .login-status.error{color:var(--loss);}
+
+  /* DASHBOARD */
+  .dashboard{display:none;}
+  .dashboard.show{display:block;}
+  .wrap{max-width:1400px;margin:0 auto;padding:28px 32px 80px;}
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:34px;
+    height:34px;
+    border-radius:8px;
+    background:linear-gradient(180deg,#1D222B,#11141A);
+    border:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:15px;
+    color:var(--accent);
+  }
+  .brand h1{font-size:17px;font-weight:600;margin:0;}
+  .brand .sub{font-size:12px;color:var(--text-faint);margin-top:1px;}
+  .topbar-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .user-info{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:var(--text-mute);
+    padding:6px 12px;
+    background:var(--bg-elev-2);
+    border:1px solid var(--border-soft);
+    border-radius:999px;
+  }
+  .user-badge{
+    background:var(--accent);
+    color:#0A0E14;
+    padding:2px 6px;
+    border-radius:4px;
+    font-size:10px;
+    font-weight:600;
+  }
+  .pill-status{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-faint);
+    padding:6px 10px;
+    border:1px solid var(--border-soft);
+    border-radius:999px;
+  }
+  button{font-family:var(--sans);cursor:pointer;}
+  .btn{
+    background:var(--bg-elev-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    padding:9px 16px;
+    font-size:13px;
+    font-weight:500;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    transition:background .12s;
+  }
+  .btn:hover{background:#242A35;}
+  .btn-primary{background:var(--accent);color:#0A0E14;font-weight:600;}
+  .btn-primary:hover{background:#5f9aff;}
+  .btn-ghost{background:transparent;color:var(--text-mute);}
+  .btn-ghost:hover{background:var(--bg-elev-2);}
+  .btn-sm{padding:6px 10px;font-size:12px;}
+  .btn-danger{background:var(--loss-bg);border-color:var(--loss);color:var(--loss);}
+  .btn-danger:hover{background:rgba(224,82,77,0.2);border-color:var(--loss);}
+
+  .metrics{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:12px;
+    margin-bottom:20px;
+  }
+  .metric-card{
+    background:var(--bg-elev);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius);
+    padding:14px 16px;
+  }
+  .metric-label{
+    font-size:11px;
+    color:var(--text-faint);
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .metric-value{
+    font-family:var(--mono);
+    font-size:21px;
+    font-weight:600;
+  }
+  .metric-sub{font-size:11px;color:var(--text-faint);margin-top:4px;}
+  .pos{color:var(--profit);}
+  .neg{color:var(--loss);}
+
+  .panels{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:24px;}
+  .panel{
+    background:var(--bg-elev);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius);
+    padding:18px 20px;
+  }
+  .panel-title{font-size:13px;font-weight:600;margin:0 0 2px;}
+  .panel-desc{font-size:11px;color:var(--text-faint);margin:0 0 14px;}
+  .chart-box{position:relative;width:100%;}
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .toolbar-left{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  input,select{
+    background:var(--bg-elev-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:var(--radius-sm);
+    padding:8px 10px;
+    font-size:13px;
+    outline:none;
+    transition:border-color .12s;
+  }
+  input::placeholder{color:var(--text-faint);}
+  input:focus,select:focus{border-color:var(--accent);}
+
+  .table-scroll{
+    overflow-x:auto;
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius);
+    background:var(--bg-elev);
+  }
+  table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1200px;}
+  thead th{
+    position:sticky;
+    top:0;
+    background:var(--bg-elev-2);
+    text-align:left;
+    font-size:11px;
+    font-weight:600;
+    color:var(--text-faint);
+    padding:11px 12px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+    cursor:pointer;
+  }
+  tbody td{
+    padding:9px 12px;
+    border-bottom:1px solid var(--border-soft);
+    white-space:nowrap;
+    font-family:var(--mono);
+    color:var(--text);
+  }
+  tbody td.cell-sans{font-family:var(--sans);}
+  tbody tr:hover{background:var(--bg-elev-2);}
+
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    padding:3px 9px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:600;
+  }
+  .badge-buy{background:var(--profit-bg);color:var(--profit);}
+  .badge-sell{background:var(--loss-bg);color:var(--loss);}
+  .badge-win{background:var(--profit-bg);color:var(--profit);}
+  .badge-loss{background:var(--loss-bg);color:var(--loss);}
+  .badge-open{background:var(--open-bg);color:var(--open);}
+
+  .empty-state{
+    padding:60px 20px;
+    text-align:center;
+    color:var(--text-faint);
+  }
+
+  /* MODALS */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(8,10,14,0.7);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--bg-elev);
+    border:1px solid var(--border);
+    border-radius:14px;
+    width:100%;
+    max-width:680px;
+    max-height:88vh;
+    overflow-y:auto;
+    padding:24px 28px;
+  }
+  .modal-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .modal-head h2{font-size:16px;font-weight:600;margin:0;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .form-grid .full{grid-column:1 / -1;}
+  .field label{
+    display:block;
+    font-size:11.5px;
+    color:var(--text-mute);
+    margin-bottom:6px;
+    font-weight:500;
+  }
+  .field input,.field select,.field textarea{
+    width:100%;
+    background:var(--bg-elev-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:var(--radius-sm);
+    padding:8px 10px;
+    font-size:13px;
+    outline:none;
+  }
+  .field textarea{font-family:var(--sans);resize:vertical;min-height:60px;}
+  .field-hint{font-size:10.5px;color:var(--text-faint);margin-top:4px;}
+  .modal-foot{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:22px;
+    padding-top:18px;
+    border-top:1px solid var(--border-soft);
+  }
+
+  /* USERS MODAL */
+  .user-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px;
+    background:var(--bg-elev-2);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-sm);
+    margin-bottom:8px;
+    font-size:13px;
+  }
+  .user-item .email{font-family:var(--mono);flex:1;}
+  .user-item .admin-badge{
+    background:var(--accent);
+    color:#0A0E14;
+    padding:2px 8px;
+    border-radius:4px;
+    font-size:10px;
+    font-weight:600;
+    margin-right:8px;
+  }
+
+  .toggle-row{display:flex;gap:8px;}
+  .toggle-btn{
+    flex:1;
+    background:var(--bg-elev-2);
+    border:1px solid var(--border);
+    color:var(--text-mute);
+    border-radius:var(--radius-sm);
+    padding:8px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .toggle-btn.active-buy{background:var(--profit-bg);border-color:var(--profit);color:var(--profit);}
+  .toggle-btn.active-sell{background:var(--loss-bg);border-color:var(--loss);color:var(--loss);}
+
+  .toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--bg-elev-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:11px 18px;
+    border-radius:999px;
+    font-size:13px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    opacity:0;
+    transition:opacity .2s,transform .2s;
+    z-index:100;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast i{color:var(--profit);}
+  .toast.err i{color:var(--loss);}
+
+
+  /* SNAPSHOT ROWS */
+  .snap-row{display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:end;margin-bottom:8px;}
+  .snap-row .field{margin:0;}
+
+  /* PARTIAL BOOKINGS */
+  .partial-section{margin-top:18px;border-top:1px solid var(--border-soft);padding-top:14px;}
+  .partial-section-title{font-size:12px;font-weight:600;color:var(--text-mute);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;justify-content:space-between;}
+  .partial-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;}
+  .partial-row .field{margin:0;}
+  .btn-add-partial{background:var(--profit-bg);border:1px dashed var(--profit);color:var(--profit);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:background .15s;}
+  .btn-add-partial:hover{background:rgba(43,166,108,0.2);}
+  .btn-del-partial{background:var(--loss-bg);border:1px solid var(--loss);color:var(--loss);border-radius:var(--radius-sm);padding:6px 8px;font-size:12px;cursor:pointer;}
+  .btn-del-partial:hover{background:rgba(224,82,77,0.2);}
+  /* RR BOX in modal */
+  .rr-box{background:var(--bg-elev-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .rr-item{text-align:center;}
+  .rr-label{font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+  .rr-value{font-family:var(--mono);font-size:15px;font-weight:600;}
+  /* RR in table badge */
+  .rr-badge{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600;}
+  .rr-good{background:rgba(43,166,108,0.15);color:var(--profit);}
+  .rr-bad{background:rgba(224,82,77,0.15);color:var(--loss);}
+  .rr-neutral{background:var(--bg-elev-2);color:var(--text-mute);}
+  /* Partial bookings in table expand */
+  .partials-expand{background:var(--bg-elev-2);border-bottom:1px solid var(--border-soft);}
+  .partials-expand td{padding:8px 12px!important;}
+  .partial-tag{display:inline-flex;align-items:center;gap:6px;background:var(--bg-elev);border:1px solid var(--border-soft);border-radius:6px;padding:4px 10px;font-size:11px;font-family:var(--mono);margin:2px;}
+  .pnl-summary{font-size:11px;color:var(--text-mute);margin-top:6px;}
+
+  @media (max-width:1000px){
+    .metrics{grid-template-columns:repeat(3,1fr);}
+    .panels{grid-template-columns:1fr;}
+  }
+  @media (max-width:640px){
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .form-grid{grid-template-columns:1fr;}
+    .wrap{padding:18px 14px 60px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div class="login-page show" id="loginPage">
+  <div class="login-container">
+    <div class="login-logo">
+      <div class="mark">TJ</div>
+      <h1>Trade Log</h1>
+      <div class="sub">Secure Trading Dashboard</div>
+    </div>
+    
+    <form id="loginForm" onsubmit="return false;">
+      <div class="form-group">
+        <label>User ID</label>
+        <input type="text" id="loginUserId" placeholder="Enter your user ID" autocomplete="username" required>
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" required>
+      </div>
+
+      <button type="button" class="btn-login" id="loginBtn">Login</button>
+      <div class="login-status" id="loginStatus"></div>
+      <div style="text-align:center;margin-top:14px;">
+        <button type="button" id="testConnectionBtn" style="background:none;border:none;color:var(--text-faint);font-size:11px;cursor:pointer;text-decoration:underline;">Test Connection</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">TJ</div>
+        <div>
+          <h1>Trade Log</h1>
+          <div class="sub">Trading Journal & Dashboard</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="user-info">
+          <span id="userEmail"></span>
+          <span class="user-badge" id="adminBadge" style="display:none;">ADMIN</span>
+        </div>
+        <span class="pill-status" id="storageStatus">Loading…</span>
+        <button class="btn btn-ghost btn-sm" id="usersBtn" title="Manage Users" style="display:none;">
+          <i class="ti ti-users"></i>Manage Users
+        </button>
+        <button class="btn btn-ghost btn-sm" id="sheetBtn" title="Google Sheet Sync">
+          <i class="ti ti-cloud"></i>Sheet Sync
+        </button>
+        <button class="btn btn-ghost btn-sm" id="exportBtn" title="Export CSV">
+          <i class="ti ti-download"></i>Export
+        </button>
+        <button class="btn btn-ghost btn-sm" id="pineBtn" title="TradingView Pine Script" style="color:#4C8DFF;border-color:#4C8DFF;">
+          <i class="ti ti-chart-candle"></i>Pine Script
+        </button>
+        <button class="btn btn-ghost btn-sm" id="logoutBtn">
+          <i class="ti ti-logout"></i>Logout
+        </button>
+        <button class="btn btn-primary" id="addTradeBtn">
+          <i class="ti ti-plus"></i>Add Trade
+        </button>
+      </div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics" id="metricsRow"></div>
+
+    <!-- CHARTS -->
+    <div class="panels">
+      <div class="panel">
+        <p class="panel-title">Equity Curve</p>
+        <p class="panel-desc">Cumulative P&L across all trades</p>
+        <div class="chart-box" style="height:230px;">
+          <canvas id="equityChart"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="panel-title">Win / Loss Split</p>
+        <p class="panel-desc">Share of closed trades by result</p>
+        <div class="chart-box" style="height:230px;">
+          <canvas id="winLossChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOOLBAR & TABLE -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <input type="date" id="filterFromDate" title="From date" style="width:130px;">
+        <input type="date" id="filterToDate" title="To date" style="width:130px;">
+        <select id="filterSide">
+          <option value="">All sides</option>
+          <option value="Buy">Buy</option>
+          <option value="Sell">Sell</option>
+        </select>
+        <select id="filterResult">
+          <option value="">All results</option>
+          <option value="Win">Win</option>
+          <option value="Loss">Loss</option>
+          <option value="Breakeven">Breakeven</option>
+          <option value="Open">Open</option>
+        </select>
+      </div>
+      <div style="font-size:12px;color:var(--text-faint);" id="rowCountLabel">0 trades</div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <i class="ti ti-chart-candle"></i>
+        <p>No trades yet. Click "Add Trade" to get started.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT TRADE MODAL -->
+<div class="modal-overlay" id="tradeModalOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="tradeModalTitle">Add Trade</h2>
+      <button class="btn btn-ghost" id="tradeModalCloseBtn" aria-label="Close">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+    
+    <form id="tradeForm" onsubmit="return false;">
+      <div class="form-grid">
+        <div class="field">
+          <label>Symbol</label>
+          <input type="text" id="f_symbol" placeholder="NIFTY" style="text-transform:uppercase;" required>
+        </div>
+        <div class="field">
+          <label>Buy / Sell</label>
+          <div class="toggle-row">
+            <button type="button" class="toggle-btn" id="f_buyBtn" data-val="Buy">Buy</button>
+            <button type="button" class="toggle-btn" id="f_sellBtn" data-val="Sell">Sell</button>
+          </div>
+          <input type="hidden" id="f_side" value="Buy">
+        </div>
+        <div class="field">
+          <label>Entry Date</label>
+          <input type="date" id="f_entryDate" required>
+        </div>
+        <div class="field">
+          <label>Entry Time</label>
+          <select id="f_entryTime">
+            <option value="">-- Select Time --</option>
+          <option value="00:00">12:00 AM</option>
+          <option value="00:05">12:05 AM</option>
+          <option value="00:10">12:10 AM</option>
+          <option value="00:15">12:15 AM</option>
+          <option value="00:20">12:20 AM</option>
+          <option value="00:25">12:25 AM</option>
+          <option value="00:30">12:30 AM</option>
+          <option value="00:35">12:35 AM</option>
+          <option value="00:40">12:40 AM</option>
+          <option value="00:45">12:45 AM</option>
+          <option value="00:50">12:50 AM</option>
+          <option value="00:55">12:55 AM</option>
+          <option value="01:00">1:00 AM</option>
+          <option value="01:05">1:05 AM</option>
+          <option value="01:10">1:10 AM</option>
+          <option value="01:15">1:15 AM</option>
+          <option value="01:20">1:20 AM</option>
+          <option value="01:25">1:25 AM</option>
+          <option value="01:30">1:30 AM</option>
+          <option value="01:35">1:35 AM</option>
+          <option value="01:40">1:40 AM</option>
+          <option value="01:45">1:45 AM</option>
+          <option value="01:50">1:50 AM</option>
+          <option value="01:55">1:55 AM</option>
+          <option value="02:00">2:00 AM</option>
+          <option value="02:05">2:05 AM</option>
+          <option value="02:10">2:10 AM</option>
+          <option value="02:15">2:15 AM</option>
+          <option value="02:20">2:20 AM</option>
+          <option value="02:25">2:25 AM</option>
+          <option value="02:30">2:30 AM</option>
+          <option value="02:35">2:35 AM</option>
+          <option value="02:40">2:40 AM</option>
+          <option value="02:45">2:45 AM</option>
+          <option value="02:50">2:50 AM</option>
+          <option value="02:55">2:55 AM</option>
+          <option value="03:00">3:00 AM</option>
+          <option value="03:05">3:05 AM</option>
+          <option value="03:10">3:10 AM</option>
+          <option value="03:15">3:15 AM</option>
+          <option value="03:20">3:20 AM</option>
+          <option value="03:25">3:25 AM</option>
+          <option value="03:30">3:30 AM</option>
+          <option value="03:35">3:35 AM</option>
+          <option value="03:40">3:40 AM</option>
+          <option value="03:45">3:45 AM</option>
+          <option value="03:50">3:50 AM</option>
+          <option value="03:55">3:55 AM</option>
+          <option value="04:00">4:00 AM</option>
+          <option value="04:05">4:05 AM</option>
+          <option value="04:10">4:10 AM</option>
+          <option value="04:15">4:15 AM</option>
+          <option value="04:20">4:20 AM</option>
+          <option value="04:25">4:25 AM</option>
+          <option value="04:30">4:30 AM</option>
+          <option value="04:35">4:35 AM</option>
+          <option value="04:40">4:40 AM</option>
+          <option value="04:45">4:45 AM</option>
+          <option value="04:50">4:50 AM</option>
+          <option value="04:55">4:55 AM</option>
+          <option value="05:00">5:00 AM</option>
+          <option value="05:05">5:05 AM</option>
+          <option value="05:10">5:10 AM</option>
+          <option value="05:15">5:15 AM</option>
+          <option value="05:20">5:20 AM</option>
+          <option value="05:25">5:25 AM</option>
+          <option value="05:30">5:30 AM</option>
+          <option value="05:35">5:35 AM</option>
+          <option value="05:40">5:40 AM</option>
+          <option value="05:45">5:45 AM</option>
+          <option value="05:50">5:50 AM</option>
+          <option value="05:55">5:55 AM</option>
+          <option value="06:00">6:00 AM</option>
+          <option value="06:05">6:05 AM</option>
+          <option value="06:10">6:10 AM</option>
+          <option value="06:15">6:15 AM</option>
+          <option value="06:20">6:20 AM</option>
+          <option value="06:25">6:25 AM</option>
+          <option value="06:30">6:30 AM</option>
+          <option value="06:35">6:35 AM</option>
+          <option value="06:40">6:40 AM</option>
+          <option value="06:45">6:45 AM</option>
+          <option value="06:50">6:50 AM</option>
+          <option value="06:55">6:55 AM</option>
+          <option value="07:00">7:00 AM</option>
+          <option value="07:05">7:05 AM</option>
+          <option value="07:10">7:10 AM</option>
+          <option value="07:15">7:15 AM</option>
+          <option value="07:20">7:20 AM</option>
+          <option value="07:25">7:25 AM</option>
+          <option value="07:30">7:30 AM</option>
+          <option value="07:35">7:35 AM</option>
+          <option value="07:40">7:40 AM</option>
+          <option value="07:45">7:45 AM</option>
+          <option value="07:50">7:50 AM</option>
+          <option value="07:55">7:55 AM</option>
+          <option value="08:00">8:00 AM</option>
+          <option value="08:05">8:05 AM</option>
+          <option value="08:10">8:10 AM</option>
+          <option value="08:15">8:15 AM</option>
+          <option value="08:20">8:20 AM</option>
+          <option value="08:25">8:25 AM</option>
+          <option value="08:30">8:30 AM</option>
+          <option value="08:35">8:35 AM</option>
+          <option value="08:40">8:40 AM</option>
+          <option value="08:45">8:45 AM</option>
+          <option value="08:50">8:50 AM</option>
+          <option value="08:55">8:55 AM</option>
+          <option value="09:00">9:00 AM</option>
+          <option value="09:05">9:05 AM</option>
+          <option value="09:10">9:10 AM</option>
+          <option value="09:15">9:15 AM</option>
+          <option value="09:20">9:20 AM</option>
+          <option value="09:25">9:25 AM</option>
+          <option value="09:30">9:30 AM</option>
+          <option value="09:35">9:35 AM</option>
+          <option value="09:40">9:40 AM</option>
+          <option value="09:45">9:45 AM</option>
+          <option value="09:50">9:50 AM</option>
+          <option value="09:55">9:55 AM</option>
+          <option value="10:00">10:00 AM</option>
+          <option value="10:05">10:05 AM</option>
+          <option value="10:10">10:10 AM</option>
+          <option value="10:15">10:15 AM</option>
+          <option value="10:20">10:20 AM</option>
+          <option value="10:25">10:25 AM</option>
+          <option value="10:30">10:30 AM</option>
+          <option value="10:35">10:35 AM</option>
+          <option value="10:40">10:40 AM</option>
+          <option value="10:45">10:45 AM</option>
+          <option value="10:50">10:50 AM</option>
+          <option value="10:55">10:55 AM</option>
+          <option value="11:00">11:00 AM</option>
+          <option value="11:05">11:05 AM</option>
+          <option value="11:10">11:10 AM</option>
+          <option value="11:15">11:15 AM</option>
+          <option value="11:20">11:20 AM</option>
+          <option value="11:25">11:25 AM</option>
+          <option value="11:30">11:30 AM</option>
+          <option value="11:35">11:35 AM</option>
+          <option value="11:40">11:40 AM</option>
+          <option value="11:45">11:45 AM</option>
+          <option value="11:50">11:50 AM</option>
+          <option value="11:55">11:55 AM</option>
+          <option value="12:00">12:00 PM</option>
+          <option value="12:05">12:05 PM</option>
+          <option value="12:10">12:10 PM</option>
+          <option value="12:15">12:15 PM</option>
+          <option value="12:20">12:20 PM</option>
+          <option value="12:25">12:25 PM</option>
+          <option value="12:30">12:30 PM</option>
+          <option value="12:35">12:35 PM</option>
+          <option value="12:40">12:40 PM</option>
+          <option value="12:45">12:45 PM</option>
+          <option value="12:50">12:50 PM</option>
+          <option value="12:55">12:55 PM</option>
+          <option value="13:00">1:00 PM</option>
+          <option value="13:05">1:05 PM</option>
+          <option value="13:10">1:10 PM</option>
+          <option value="13:15">1:15 PM</option>
+          <option value="13:20">1:20 PM</option>
+          <option value="13:25">1:25 PM</option>
+          <option value="13:30">1:30 PM</option>
+          <option value="13:35">1:35 PM</option>
+          <option value="13:40">1:40 PM</option>
+          <option value="13:45">1:45 PM</option>
+          <option value="13:50">1:50 PM</option>
+          <option value="13:55">1:55 PM</option>
+          <option value="14:00">2:00 PM</option>
+          <option value="14:05">2:05 PM</option>
+          <option value="14:10">2:10 PM</option>
+          <option value="14:15">2:15 PM</option>
+          <option value="14:20">2:20 PM</option>
+          <option value="14:25">2:25 PM</option>
+          <option value="14:30">2:30 PM</option>
+          <option value="14:35">2:35 PM</option>
+          <option value="14:40">2:40 PM</option>
+          <option value="14:45">2:45 PM</option>
+          <option value="14:50">2:50 PM</option>
+          <option value="14:55">2:55 PM</option>
+          <option value="15:00">3:00 PM</option>
+          <option value="15:05">3:05 PM</option>
+          <option value="15:10">3:10 PM</option>
+          <option value="15:15">3:15 PM</option>
+          <option value="15:20">3:20 PM</option>
+          <option value="15:25">3:25 PM</option>
+          <option value="15:30">3:30 PM</option>
+          <option value="15:35">3:35 PM</option>
+          <option value="15:40">3:40 PM</option>
+          <option value="15:45">3:45 PM</option>
+          <option value="15:50">3:50 PM</option>
+          <option value="15:55">3:55 PM</option>
+          <option value="16:00">4:00 PM</option>
+          <option value="16:05">4:05 PM</option>
+          <option value="16:10">4:10 PM</option>
+          <option value="16:15">4:15 PM</option>
+          <option value="16:20">4:20 PM</option>
+          <option value="16:25">4:25 PM</option>
+          <option value="16:30">4:30 PM</option>
+          <option value="16:35">4:35 PM</option>
+          <option value="16:40">4:40 PM</option>
+          <option value="16:45">4:45 PM</option>
+          <option value="16:50">4:50 PM</option>
+          <option value="16:55">4:55 PM</option>
+          <option value="17:00">5:00 PM</option>
+          <option value="17:05">5:05 PM</option>
+          <option value="17:10">5:10 PM</option>
+          <option value="17:15">5:15 PM</option>
+          <option value="17:20">5:20 PM</option>
+          <option value="17:25">5:25 PM</option>
+          <option value="17:30">5:30 PM</option>
+          <option value="17:35">5:35 PM</option>
+          <option value="17:40">5:40 PM</option>
+          <option value="17:45">5:45 PM</option>
+          <option value="17:50">5:50 PM</option>
+          <option value="17:55">5:55 PM</option>
+          <option value="18:00">6:00 PM</option>
+          <option value="18:05">6:05 PM</option>
+          <option value="18:10">6:10 PM</option>
+          <option value="18:15">6:15 PM</option>
+          <option value="18:20">6:20 PM</option>
+          <option value="18:25">6:25 PM</option>
+          <option value="18:30">6:30 PM</option>
+          <option value="18:35">6:35 PM</option>
+          <option value="18:40">6:40 PM</option>
+          <option value="18:45">6:45 PM</option>
+          <option value="18:50">6:50 PM</option>
+          <option value="18:55">6:55 PM</option>
+          <option value="19:00">7:00 PM</option>
+          <option value="19:05">7:05 PM</option>
+          <option value="19:10">7:10 PM</option>
+          <option value="19:15">7:15 PM</option>
+          <option value="19:20">7:20 PM</option>
+          <option value="19:25">7:25 PM</option>
+          <option value="19:30">7:30 PM</option>
+          <option value="19:35">7:35 PM</option>
+          <option value="19:40">7:40 PM</option>
+          <option value="19:45">7:45 PM</option>
+          <option value="19:50">7:50 PM</option>
+          <option value="19:55">7:55 PM</option>
+          <option value="20:00">8:00 PM</option>
+          <option value="20:05">8:05 PM</option>
+          <option value="20:10">8:10 PM</option>
+          <option value="20:15">8:15 PM</option>
+          <option value="20:20">8:20 PM</option>
+          <option value="20:25">8:25 PM</option>
+          <option value="20:30">8:30 PM</option>
+          <option value="20:35">8:35 PM</option>
+          <option value="20:40">8:40 PM</option>
+          <option value="20:45">8:45 PM</option>
+          <option value="20:50">8:50 PM</option>
+          <option value="20:55">8:55 PM</option>
+          <option value="21:00">9:00 PM</option>
+          <option value="21:05">9:05 PM</option>
+          <option value="21:10">9:10 PM</option>
+          <option value="21:15">9:15 PM</option>
+          <option value="21:20">9:20 PM</option>
+          <option value="21:25">9:25 PM</option>
+          <option value="21:30">9:30 PM</option>
+          <option value="21:35">9:35 PM</option>
+          <option value="21:40">9:40 PM</option>
+          <option value="21:45">9:45 PM</option>
+          <option value="21:50">9:50 PM</option>
+          <option value="21:55">9:55 PM</option>
+          <option value="22:00">10:00 PM</option>
+          <option value="22:05">10:05 PM</option>
+          <option value="22:10">10:10 PM</option>
+          <option value="22:15">10:15 PM</option>
+          <option value="22:20">10:20 PM</option>
+          <option value="22:25">10:25 PM</option>
+          <option value="22:30">10:30 PM</option>
+          <option value="22:35">10:35 PM</option>
+          <option value="22:40">10:40 PM</option>
+          <option value="22:45">10:45 PM</option>
+          <option value="22:50">10:50 PM</option>
+          <option value="22:55">10:55 PM</option>
+          <option value="23:00">11:00 PM</option>
+          <option value="23:05">11:05 PM</option>
+          <option value="23:10">11:10 PM</option>
+          <option value="23:15">11:15 PM</option>
+          <option value="23:20">11:20 PM</option>
+          <option value="23:25">11:25 PM</option>
+          <option value="23:30">11:30 PM</option>
+          <option value="23:35">11:35 PM</option>
+          <option value="23:40">11:40 PM</option>
+          <option value="23:45">11:45 PM</option>
+          <option value="23:50">11:50 PM</option>
+          <option value="23:55">11:55 PM</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Entry Price</label>
+          <input type="number" step="0.01" id="f_entryPrice" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label>Quantity</label>
+          <input type="number" step="1" id="f_quantity" placeholder="e.g. 10">
+        </div>
+        <div class="field">
+          <label>Leverage</label>
+          <input type="number" step="0.1" id="f_leverage" placeholder="e.g. 1">
+          <p class="field-hint">1 = no leverage</p>
+        </div>
+        <div class="field">
+          <label>Stop Loss</label>
+          <input type="number" step="0.01" id="f_stopLoss" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>Target Price</label>
+          <input type="number" step="0.01" id="f_targetPrice" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>Exit Price</label>
+          <input type="number" step="0.01" id="f_exitPrice" placeholder="Leave blank if open">
+        </div>
+        <!-- PRICE SNAPSHOTS — dynamic rows -->
+        <div class="full" style="margin-top:4px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:11.5px;font-weight:600;color:var(--text-mute);text-transform:uppercase;letter-spacing:.04em;">Price Snapshots</span>
+            <button type="button" id="addSnapshotBtn" class="btn-add-partial" style="font-size:11px;padding:4px 10px;"><i class="ti ti-plus"></i> Add Snapshot</button>
+          </div>
+          <div id="snapshotsContainer"></div>
+        </div>
+        <!-- RR BOX (auto calculated) -->
+        <div class="full" id="rrBox" style="display:none;">
+          <div class="rr-box">
+            <div class="rr-item">
+              <div class="rr-label">Risk (SL)</div>
+              <div class="rr-value neg" id="rr_risk">—</div>
+            </div>
+            <div class="rr-item">
+              <div class="rr-label">Reward (Target)</div>
+              <div class="rr-value pos" id="rr_reward">—</div>
+            </div>
+            <div class="rr-item">
+              <div class="rr-label">Risk:Reward</div>
+              <div class="rr-value" id="rr_ratio">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label>Remarks</label>
+          <textarea id="f_remarks" placeholder="Notes about the trade..."></textarea>
+        </div>
+        <div class="field-hint full" id="calcPreview"></div>
+
+        <!-- PARTIAL BOOKINGS SECTION -->
+        <div class="partial-section full">
+          <div class="partial-section-title">
+            <span><i class="ti ti-scissors"></i> Partial Bookings</span>
+            <button type="button" class="btn-add-partial" id="addPartialBtn"><i class="ti ti-plus"></i> Add Booking</button>
+          </div>
+          <div id="partialsContainer"></div>
+          <div id="partialSummary" style="font-size:12px;color:var(--text-mute);margin-top:6px;"></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="tradeCancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="tradeSaveBtn">Save Trade</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MANAGE USERS MODAL (ADMIN ONLY) -->
+<div class="modal-overlay" id="usersModalOverlay">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-head">
+      <h2>Manage Users</h2>
+      <button class="btn btn-ghost" id="usersModalCloseBtn">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+    
+    <div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:12px;color:var(--text-mute);margin-bottom:8px;font-weight:500;">
+          Add New User
+        </label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="newUserId" placeholder="User ID" style="flex:1;min-width:100px;">
+          <input type="password" id="newUserPassword" placeholder="Password" style="flex:1;min-width:100px;">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-mute);white-space:nowrap;">
+            <input type="checkbox" id="newUserIsAdmin" style="width:auto;padding:0;"> Admin
+          </label>
+          <button class="btn btn-primary btn-sm" id="addUserBtn">Add</button>
+        </div>
+      </div>
+
+      <label style="display:block;font-size:12px;color:var(--text-mute);margin-bottom:8px;font-weight:500;">
+        Current Users
+      </label>
+      <div id="usersList"></div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="usersModalCloseBtn2">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET SYNC MODAL -->
+<div class="modal-overlay" id="sheetModalOverlay">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-head">
+      <h2>Google Sheet Sync</h2>
+      <button class="btn btn-ghost" id="sheetModalCloseBtn">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+    
+    <div style="font-size:13px;color:var(--text-mute);line-height:1.6;">
+      <p style="color:var(--text);">Sync your trades with a Google Sheet for team collaboration.</p>
+      
+      <div class="field" style="margin-bottom:20px;">
+        <label>Web App URL</label>
+        <input type="text" id="f_sheetUrl" placeholder="https://script.google.com/macros/s/.../exec" style="font-family:var(--mono);font-size:12px;">
+        <p class="field-hint">Paste your Google Apps Script Web App URL here</p>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <button class="btn btn-primary" id="pullSheetBtn">
+          <i class="ti ti-download"></i>Pull from Sheet
+        </button>
+        <button class="btn btn-primary" id="pushSheetBtn">
+          <i class="ti ti-upload"></i>Push to Sheet
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="sheetModalCloseBtn2">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- PINE SCRIPT MODAL -->
+<div class="modal-overlay" id="pineModalOverlay">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-head">
+      <h2><i class="ti ti-chart-candle" style="color:#4C8DFF;margin-right:8px;"></i>TradingView Pine Script</h2>
+      <button class="btn btn-ghost" id="pineModalCloseBtn"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="font-size:13px;color:var(--text-mute);margin-bottom:14px;line-height:1.6;">
+      Generate a Pine Script indicator from your trades. Paste it into TradingView → Pine Editor → Add to Chart.
+    </div>
+    <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <select id="pineSymbolFilter" style="min-width:140px;">
+        <option value="">All Symbols</option>
+      </select>
+      <select id="pineExchange" style="min-width:110px;">
+        <option value="NSE">NSE (India)</option>
+        <option value="BSE">BSE (India)</option>
+        <option value="BINANCE">Binance (Crypto)</option>
+        <option value="">No Exchange Prefix</option>
+      </select>
+      <button class="btn btn-primary btn-sm" id="pineGenerateBtn"><i class="ti ti-refresh"></i> Generate</button>
+      <button class="btn btn-sm" id="pineCopyBtn" style="margin-left:auto;"><i class="ti ti-copy"></i> Copy All</button>
+    </div>
+    <div style="position:relative;">
+      <textarea id="pineOutput" readonly style="
+        width:100%;height:380px;
+        background:#0D1117;
+        color:#C9D1D9;
+        font-family:'IBM Plex Mono',monospace;
+        font-size:11.5px;
+        border:1px solid var(--border);
+        border-radius:var(--radius-sm);
+        padding:14px;
+        resize:none;
+        line-height:1.6;
+      " placeholder="Click Generate to build your Pine Script..."></textarea>
+    </div>
+    <div style="margin-top:10px;padding:10px 14px;background:var(--bg-elev-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);font-size:12px;color:var(--text-faint);line-height:1.7;">
+      <strong style="color:var(--text-mute);">How to use:</strong><br>
+      1. Click <strong>Generate</strong> → <strong>Copy All</strong><br>
+      2. Open TradingView → select your symbol → open <strong>Pine Editor</strong> (bottom panel)<br>
+      3. Delete existing code → Paste → click <strong>Add to chart</strong>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="pineModalCloseBtn2">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <i class="ti ti-circle-check"></i>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+(function(){
+
+  // ===== STATE =====
+  var APP = {
+    userEmail: null,
+    isAdmin: false,
+    token: null,
+    sheetUrl: '',
+    trades: [],
+    nextId: 1,
+    editingId: null,
+    sortKey: 'id',
+    sortDir: 'desc'
+  };
+
+  var COLS = ['ID','Symbol','Buy/Sell','Entry Date','Time','Entry $','Qty','Lev','SL','Target','R:R','Price Snapshots','Exit $','P&L','Partials','Result','Remarks'];
+
+  // ===== LOGIN =====
+  var SHEET_URL = 'https://script.google.com/macros/s/AKfycbxspmnZlzpEd3YQWMkRuSzYUdmbLT688-7Amxl6CXSGELoQ-Rg6ae7FY8mc7SbflL0W/exec';
+
+  function initLogin(){
+    document.getElementById('loginForm').addEventListener('submit', e => e.preventDefault());
+    document.getElementById('loginBtn').addEventListener('click', handleLoginBtn);
+    document.getElementById('loginUserId').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('loginPassword').focus(); });
+    document.getElementById('loginPassword').addEventListener('keydown', function(e){ if(e.key==='Enter') handleLoginBtn(); });
+    document.getElementById('testConnectionBtn').addEventListener('click', function(){
+      showLoginStatus('Testing connection...', false);
+      fetch(SHEET_URL + '?action=ping', { redirect: 'follow' })
+        .then(function(r){ return r.text(); })
+        .then(function(t){ showLoginStatus('✅ Connected! Response: ' + t.substring(0,60), false, 'success'); })
+        .catch(function(err){ showLoginStatus('❌ Connection failed: ' + err.message, true); });
+    });
+  }
+
+  function handleLoginBtn(){
+    var userId = document.getElementById('loginUserId').value.trim();
+    var password = document.getElementById('loginPassword').value;
+
+    if(!userId){ showLoginStatus('Enter your User ID', true); return; }
+    if(!password){ showLoginStatus('Enter your password', true); return; }
+
+    verifyCredentials(userId, password);
+  }
+
+  function verifyCredentials(userId, password){
+    showLoginStatus('Verifying with Google Sheet...', false);
+    document.getElementById('loginBtn').disabled = true;
+
+    var url = SHEET_URL + '?action=verifyPassword&userId=' + encodeURIComponent(userId) + '&password=' + encodeURIComponent(password);
+
+    fetch(url, { redirect: 'follow' })
+      .then(function(r){
+        if(!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function(text){
+        var res;
+        try { res = JSON.parse(text); }
+        catch(e){ throw new Error('Bad response from server: ' + text.substring(0, 80)); }
+
+        if(res.ok){
+          APP.userEmail = res.userId || userId;
+          APP.isAdmin = res.isAdmin || false;
+          APP.token = res.token || ('tok-' + userId + '-' + Date.now());
+          APP.sheetUrl = SHEET_URL;
+          localStorage.setItem('tradelog_token', APP.token);
+          localStorage.setItem('tradelog_email', APP.userEmail);
+          localStorage.setItem('tradelog_isAdmin', String(APP.isAdmin));
+          localStorage.setItem('tradelog_sheetUrl', SHEET_URL);
+          showLoginStatus('Login successful! Opening dashboard...', false, 'success');
+          setTimeout(function(){ showDashboard(); }, 500);
+        } else {
+          showLoginStatus(res.error || 'Invalid User ID or Password', true);
+          document.getElementById('loginBtn').disabled = false;
+        }
+      })
+      .catch(function(err){
+        showLoginStatus('Error: ' + (err.message || 'Cannot reach Google Sheet. Check the Web App URL.'), true);
+        document.getElementById('loginBtn').disabled = false;
+      });
+  }
+
+  function showLoginStatus(msg, isErr, cls){
+    var el = document.getElementById('loginStatus');
+    el.textContent = msg;
+    el.className = 'login-status' + (isErr ? ' error' : cls ? ' ' + cls : '');
+  }
+
+  function showDashboard(){
+    document.getElementById('loginPage').classList.remove('show');
+    document.getElementById('dashboard').classList.add('show');
+    document.getElementById('userEmail').textContent = APP.userEmail;
+    if(APP.isAdmin){
+      document.getElementById('adminBadge').style.display = 'inline-block';
+      document.getElementById('usersBtn').style.display = 'inline-flex';
+    }
+    initDashboard();
+  }
+
+  function logout(){
+    if(confirm('Logout?')){
+      localStorage.clear();
+      document.getElementById('dashboard').classList.remove('show');
+      document.getElementById('loginPage').classList.add('show');
+      location.reload();
+    }
+  }
+
+  function showToast(msg, isErr){
+    var t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.className = 'toast' + (isErr ? ' err' : '') + ' show';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.className = 'toast', 2400);
+  }
+
+  // ===== DASHBOARD =====
+  function initDashboard(){
+    try {
+      APP.sheetUrl = SHEET_URL;
+      localStorage.setItem('tradelog_sheetUrl', SHEET_URL);
+
+      loadTradesFromStorage();
+      renderAll();
+      bindEvents();
+      showToast('Welcome, ' + APP.userEmail + '! Syncing trades...');
+      // Auto-pull from Sheet on every login
+      autoLoadFromSheet();
+    } catch(err) {
+      showToast('Dashboard error: ' + err.message, true);
+      console.error('initDashboard error:', err);
+    }
+  }
+
+  function autoLoadFromSheet(){
+    document.getElementById('storageStatus').textContent = 'Syncing from Sheet…';
+    fetch(SHEET_URL + '?action=list&token=' + encodeURIComponent(APP.token))
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res.trades && res.trades.length){
+          APP.trades = res.trades.map(function(row){
+            return {
+              id: parseInt(row[0]) || APP.nextId++,
+              symbol: row[1] || '',
+              side: row[2] || 'Buy',
+              entryDate: row[3] || '',
+              entryTime: row[4] || '',
+              entryPrice: parseFloat(row[5]) || 0,
+              quantity: row[6] ? parseFloat(row[6]) : null,
+              leverage: row[7] ? parseFloat(row[7]) : null,
+              stopLoss: row[8] ? parseFloat(row[8]) : null,
+              targetPrice: row[9] ? parseFloat(row[9]) : null,
+              p5: row[10] ? parseFloat(row[10]) : null,
+              p10: row[11] ? parseFloat(row[11]) : null,
+              p20: row[12] ? parseFloat(row[12]) : null,
+              p30: row[13] ? parseFloat(row[13]) : null,
+              exitPrice: row[14] ? parseFloat(row[14]) : null,
+              pnl: row[15] ? parseFloat(row[15]) : null,
+              result: row[16] || 'Open',
+              remarks: row[17] || ''
+            };
+          });
+          APP.nextId = Math.max.apply(null, APP.trades.map(function(t){ return t.id; }).concat([0])) + 1;
+          saveToStorage();
+          renderAll();
+          document.getElementById('storageStatus').textContent = 'Synced ✓ ' + APP.trades.length + ' trades';
+          showToast('Loaded ' + APP.trades.length + ' trades from Sheet');
+        } else {
+          document.getElementById('storageStatus').textContent = 'Saved locally';
+          showToast('Welcome back, ' + APP.userEmail + '!');
+        }
+      })
+      .catch(function(){
+        document.getElementById('storageStatus').textContent = 'Offline — local data';
+        showToast('Sheet unavailable, using local data', true);
+      });
+  }
+
+  function bindEvents(){
+    document.getElementById('addTradeBtn').addEventListener('click', () => openTradeModal());
+    document.getElementById('tradeModalCloseBtn').addEventListener('click', closeTradeModal);
+    document.getElementById('tradeCancelBtn').addEventListener('click', closeTradeModal);
+    document.getElementById('tradeForm').addEventListener('submit', e => e.preventDefault());
+    document.getElementById('tradeSaveBtn').addEventListener('click', saveTrade);
+    
+    document.getElementById('usersBtn').addEventListener('click', () => {
+      document.getElementById('usersModalOverlay').classList.add('show');
+      loadUsers();
+    });
+    document.getElementById('usersModalCloseBtn').addEventListener('click', () => document.getElementById('usersModalOverlay').classList.remove('show'));
+    document.getElementById('usersModalCloseBtn2').addEventListener('click', () => document.getElementById('usersModalOverlay').classList.remove('show'));
+    document.getElementById('addUserBtn').addEventListener('click', addUser);
+
+    document.getElementById('sheetBtn').addEventListener('click', () => {
+      document.getElementById('f_sheetUrl').value = APP.sheetUrl;
+      document.getElementById('sheetModalOverlay').classList.add('show');
+    });
+    document.getElementById('sheetModalCloseBtn').addEventListener('click', () => document.getElementById('sheetModalOverlay').classList.remove('show'));
+    document.getElementById('sheetModalCloseBtn2').addEventListener('click', () => document.getElementById('sheetModalOverlay').classList.remove('show'));
+    document.getElementById('pullSheetBtn').addEventListener('click', pullFromSheet);
+    document.getElementById('pushSheetBtn').addEventListener('click', pushToSheet);
+
+    document.getElementById('exportBtn').addEventListener('click', exportCsv);
+    document.getElementById('pineBtn').addEventListener('click', openPineModal);
+    document.getElementById('pineModalCloseBtn').addEventListener('click', () => document.getElementById('pineModalOverlay').classList.remove('show'));
+    document.getElementById('pineModalCloseBtn2').addEventListener('click', () => document.getElementById('pineModalOverlay').classList.remove('show'));
+    document.getElementById('pineGenerateBtn').addEventListener('click', generatePineScript);
+    document.getElementById('pineCopyBtn').addEventListener('click', copyPineScript);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    document.getElementById('f_buyBtn').addEventListener('click', function(){ setSide('Buy'); });
+    document.getElementById('f_sellBtn').addEventListener('click', function(){ setSide('Sell'); });
+    document.getElementById('f_entryPrice').addEventListener('input', updateCalcPreview);
+    document.getElementById('f_exitPrice').addEventListener('input', updateCalcPreview);
+    document.getElementById('f_quantity').addEventListener('input', updateCalcPreview);
+    document.getElementById('f_leverage').addEventListener('input', updateCalcPreview);
+    document.getElementById('f_stopLoss').addEventListener('input', updateCalcPreview);
+    document.getElementById('f_targetPrice').addEventListener('input', updateCalcPreview);
+    document.getElementById('addPartialBtn').addEventListener('click', function(){ addPartialRow(); });
+    document.getElementById('addSnapshotBtn').addEventListener('click', function(){ addSnapshotRow(); });
+
+    document.getElementById('filterFromDate').addEventListener('change', renderAll);
+    document.getElementById('filterToDate').addEventListener('change', renderAll);
+    document.getElementById('filterSide').addEventListener('change', renderAll);
+    document.getElementById('filterResult').addEventListener('change', renderAll);
+  }
+
+  function setSide(side){
+    document.getElementById('f_side').value = side;
+    document.getElementById('f_buyBtn').className = 'toggle-btn' + (side==='Buy' ? ' active-buy' : '');
+    document.getElementById('f_sellBtn').className = 'toggle-btn' + (side==='Sell' ? ' active-sell' : '');
+    updateCalcPreview();
+  }
+
+  function updateCalcPreview(){
+    var entry  = parseFloat(document.getElementById('f_entryPrice').value);
+    var exit   = parseFloat(document.getElementById('f_exitPrice').value);
+    var sl     = parseFloat(document.getElementById('f_stopLoss').value);
+    var tgt    = parseFloat(document.getElementById('f_targetPrice').value);
+    var qty    = parseFloat(document.getElementById('f_quantity').value) || 1;
+    var lev    = parseFloat(document.getElementById('f_leverage').value) || 1;
+    var side   = document.getElementById('f_side').value;
+
+    // ── Risk:Reward auto-calc ──
+    var rrBox = document.getElementById('rrBox');
+    if(!isNaN(entry) && (!isNaN(sl) || !isNaN(tgt))){
+      rrBox.style.display = 'block';
+      var riskPts   = !isNaN(sl)  ? Math.abs(entry - sl)  : null;
+      var rewardPts = !isNaN(tgt) ? Math.abs(tgt - entry) : null;
+      var riskAmt   = riskPts   !== null ? riskPts   * qty * lev : null;
+      var rewardAmt = rewardPts !== null ? rewardPts * qty * lev : null;
+      var rrRatio   = (riskAmt && rewardAmt) ? (rewardAmt / riskAmt) : null;
+
+      document.getElementById('rr_risk').textContent    = riskAmt   !== null ? '₹' + riskAmt.toFixed(2)   + ' (' + (riskPts||0).toFixed(2)   + ' pts)' : '—';
+      document.getElementById('rr_reward').textContent  = rewardAmt !== null ? '₹' + rewardAmt.toFixed(2) + ' (' + (rewardPts||0).toFixed(2) + ' pts)' : '—';
+      if(rrRatio !== null){
+        var rrEl = document.getElementById('rr_ratio');
+        rrEl.textContent = '1 : ' + rrRatio.toFixed(2);
+        rrEl.style.color = rrRatio >= 2 ? 'var(--profit)' : rrRatio >= 1 ? 'var(--open)' : 'var(--loss)';
+      } else {
+        document.getElementById('rr_ratio').textContent = '—';
+        document.getElementById('rr_ratio').style.color = '';
+      }
+    } else {
+      rrBox.style.display = 'none';
+    }
+
+    // ── P&L preview ──
+    if(isNaN(entry) || isNaN(exit)){
+      document.getElementById('calcPreview').innerHTML = '';
+      updatePartialSummary(entry, qty, lev, side);
+      return;
+    }
+    var diff = side === 'Sell' ? (entry - exit) : (exit - entry);
+    var pnl  = Math.round((diff * qty * lev) * 100) / 100;
+    var result = Math.abs(pnl) < 0.01 ? 'Breakeven' : (pnl > 0 ? 'Win' : 'Loss');
+    var color  = pnl > 0 ? 'var(--profit)' : pnl < 0 ? 'var(--loss)' : 'var(--text-mute)';
+    document.getElementById('calcPreview').innerHTML =
+      `Calculated P&amp;L: <strong style="color:${color}">₹${pnl.toFixed(2)}</strong> · Result: <strong>${result}</strong>`;
+
+    updatePartialSummary(entry, qty, lev, side);
+  }
+
+
+  // ===== PRICE SNAPSHOT HELPERS =====
+  var snapshotCount = 0;
+  var SNAP_MINS = ['1','2','3','5','10','15','20','25','30','45','60','90','120'];
+
+  function addSnapshotRow(data){
+    data = data || {};
+    snapshotCount++;
+    var sid = 'snap_' + snapshotCount;
+    var minOpts = SNAP_MINS.map(function(m){
+      return '<option value="'+m+'"'+(data.min==m?' selected':'')+'>'+m+' min</option>';
+    }).join('');
+    var row = document.createElement('div');
+    row.className = 'snap-row';
+    row.id = sid;
+    row.innerHTML = '<div class="field"><label>Interval</label><select class="sn-min">'+minOpts+'</select></div>'
+      +'<div class="field"><label>Price</label><input type="number" step="0.01" class="sn-price" placeholder="0.00" value="'+(data.price||'')+'"></div>'
+      +'<button type="button" class="btn-del-partial" onclick="document.getElementById(''+sid+'').remove();" title="Remove"><i class="ti ti-x"></i></button>';
+    document.getElementById('snapshotsContainer').appendChild(row);
+  }
+
+  function getSnapshots(){
+    var rows = document.querySelectorAll('#snapshotsContainer .snap-row');
+    var result = [];
+    rows.forEach(function(row){
+      var min   = row.querySelector('.sn-min').value;
+      var price = parseFloat(row.querySelector('.sn-price').value);
+      if(!isNaN(price)) result.push({ min: min, price: price });
+    });
+    return result;
+  }
+
+  // ── Partial booking helpers ──
+  var partialCount = 0;
+  function addPartialRow(data){
+    data = data || {};
+    partialCount++;
+    var id = 'pb_' + partialCount;
+    var row = document.createElement('div');
+    row.className = 'partial-row';
+    row.id = id;
+    row.innerHTML = `
+      <div class="field">
+        <label>Exit Date</label>
+        <input type="date" class="pb-date" value="${data.date||''}" oninput="updatePartialSummaryFromEvent()">
+      </div>
+      <div class="field">
+        <label>Exit Time</label>
+        <input type="time" class="pb-time" value="${data.time||''}" oninput="updatePartialSummaryFromEvent()">
+      </div>
+      <div class="field">
+        <label>Exit Price</label>
+        <input type="number" step="0.01" class="pb-price" placeholder="0.00" value="${data.price||''}" oninput="updatePartialSummaryFromEvent()">
+      </div>
+      <div class="field">
+        <label>Qty Booked</label>
+        <input type="number" step="1" class="pb-qty" placeholder="Qty" value="${data.qty||''}" oninput="updatePartialSummaryFromEvent()">
+      </div>
+      <button type="button" class="btn-del-partial" onclick="document.getElementById('${id}').remove();updatePartialSummaryFromEvent();" title="Remove"><i class="ti ti-x"></i></button>
+    `;
+    document.getElementById('partialsContainer').appendChild(row);
+    updatePartialSummaryFromEvent();
+  }
+
+  window.updatePartialSummaryFromEvent = function(){
+    var entry = parseFloat(document.getElementById('f_entryPrice').value);
+    var qty   = parseFloat(document.getElementById('f_quantity').value) || 1;
+    var lev   = parseFloat(document.getElementById('f_leverage').value) || 1;
+    var side  = document.getElementById('f_side').value;
+    updatePartialSummary(entry, qty, lev, side);
+  };
+
+  function getPartials(){
+    var rows = document.querySelectorAll('#partialsContainer .partial-row');
+    var result = [];
+    rows.forEach(function(row){
+      var price = parseFloat(row.querySelector('.pb-price').value);
+      var qty   = parseFloat(row.querySelector('.pb-qty').value);
+      var date  = row.querySelector('.pb-date').value;
+      var time  = row.querySelector('.pb-time').value;
+      if(!isNaN(price) && !isNaN(qty)) result.push({ date, time, price, qty });
+    });
+    return result;
+  }
+
+  function updatePartialSummary(entry, totalQty, lev, side){
+    var partials = getPartials();
+    var summaryEl = document.getElementById('partialSummary');
+    if(!partials.length || isNaN(entry)){ summaryEl.innerHTML = ''; return; }
+    var totalPnl = 0, totalBooked = 0;
+    partials.forEach(function(p){
+      var diff = side === 'Sell' ? (entry - p.price) : (p.price - entry);
+      totalPnl += diff * p.qty * lev;
+      totalBooked += p.qty;
+    });
+    totalPnl = Math.round(totalPnl * 100) / 100;
+    var remaining = (totalQty || 0) - totalBooked;
+    var color = totalPnl >= 0 ? 'var(--profit)' : 'var(--loss)';
+    summaryEl.innerHTML = `Partial P&L: <strong style="color:${color}">₹${totalPnl.toFixed(2)}</strong> · Booked qty: <strong>${totalBooked}</strong> · Remaining: <strong>${remaining >= 0 ? remaining : '?'}</strong>`;
+  }
+
+  // ===== TRADES CRUD =====
+  function openTradeModal(id){
+    APP.editingId = id || null;
+    if(id){
+      var t = APP.trades.find(x => x.id === id);
+      document.getElementById('tradeModalTitle').textContent = 'Edit Trade #' + id;
+      document.getElementById('f_symbol').value = t.symbol || '';
+      setSide(t.side || 'Buy');
+      document.getElementById('f_entryDate').value = t.entryDate || '';
+      document.getElementById('f_entryTime').value = t.entryTime || '';
+      document.getElementById('f_entryPrice').value = t.entryPrice || '';
+      document.getElementById('f_quantity').value = t.quantity || '';
+      document.getElementById('f_leverage').value = t.leverage || '';
+      document.getElementById('f_stopLoss').value = t.stopLoss || '';
+      document.getElementById('f_targetPrice').value = t.targetPrice || '';
+      document.getElementById('f_exitPrice').value = t.exitPrice || '';
+      // Load snapshots
+      document.getElementById('snapshotsContainer').innerHTML = '';
+      snapshotCount = 0;
+      if(t.snapshots && t.snapshots.length){
+        t.snapshots.forEach(function(s){ addSnapshotRow(s); });
+      } else {
+        // legacy: load old p5/p10/p20/p30 as snapshots
+        if(t.p5)  addSnapshotRow({min:'5',  price:t.p5});
+        if(t.p10) addSnapshotRow({min:'10', price:t.p10});
+        if(t.p20) addSnapshotRow({min:'20', price:t.p20});
+        if(t.p30) addSnapshotRow({min:'30', price:t.p30});
+      }
+      document.getElementById('f_remarks').value = t.remarks || '';
+      // Load partial bookings
+      document.getElementById('partialsContainer').innerHTML = '';
+      partialCount = 0;
+      document.getElementById('snapshotsContainer').innerHTML = '';
+      snapshotCount = 0;
+      if(t.partials && t.partials.length){
+        t.partials.forEach(function(p){ addPartialRow(p); });
+      }
+    } else {
+      document.getElementById('tradeModalTitle').textContent = 'Add Trade';
+      document.getElementById('tradeForm').reset();
+      setSide('Buy');
+      var now = new Date().toISOString().split('T')[0];
+      document.getElementById('f_entryDate').value = now;
+      document.getElementById('partialsContainer').innerHTML = '';
+      partialCount = 0;
+      document.getElementById('snapshotsContainer').innerHTML = '';
+      snapshotCount = 0;
+    }
+    updateCalcPreview();
+    document.getElementById('tradeModalOverlay').classList.add('show');
+    document.getElementById('f_symbol').focus();
+  }
+
+  function closeTradeModal(){
+    document.getElementById('tradeModalOverlay').classList.remove('show');
+    APP.editingId = null;
+  }
+
+  function saveTrade(){
+    var symbol = document.getElementById('f_symbol').value.trim();
+    var entryPrice = document.getElementById('f_entryPrice').value;
+    var entryDate = document.getElementById('f_entryDate').value;
+
+    if(!symbol || !entryPrice || !entryDate){
+      showToast('Symbol, entry price, and date are required', true);
+      return;
+    }
+
+    var entry = parseFloat(entryPrice);
+    var exit = parseFloat(document.getElementById('f_exitPrice').value) || null;
+    var qty = parseFloat(document.getElementById('f_quantity').value) || null;
+    var lev = parseFloat(document.getElementById('f_leverage').value) || null;
+
+    var pnl = null;
+    if(exit !== null){
+      var side = document.getElementById('f_side').value;
+      var qtyVal = qty || 1;
+      var levVal = lev || 1;
+      var diff = side === 'Sell' ? (entry - exit) : (exit - entry);
+      pnl = Math.round((diff * qtyVal * levVal) * 100) / 100;
+    }
+
+    var sl       = parseFloat(document.getElementById('f_stopLoss').value) || null;
+    var tgt      = parseFloat(document.getElementById('f_targetPrice').value) || null;
+    var qtyVal   = qty || 1;
+    var levVal   = lev || 1;
+    var sideVal  = document.getElementById('f_side').value;
+
+    // Risk:Reward calc
+    var riskPts   = sl  !== null ? Math.abs(entry - sl)  : null;
+    var rewardPts = tgt !== null ? Math.abs(tgt - entry) : null;
+    var rrRatio   = (riskPts && rewardPts && riskPts > 0) ? rewardPts / riskPts : null;
+
+    // Partials
+    var partials  = getPartials();
+    var partialPnl = 0;
+    partials.forEach(function(p){
+      var d = sideVal === 'Sell' ? (entry - p.price) : (p.price - entry);
+      partialPnl += d * p.qty * levVal;
+    });
+    partialPnl = partials.length ? Math.round(partialPnl * 100) / 100 : null;
+
+    // Total pnl = full exit pnl + partial pnl
+    var totalPnl = pnl;
+    if(pnl === null && partialPnl !== null) totalPnl = partialPnl;
+    else if(pnl !== null && partialPnl !== null) totalPnl = Math.round((pnl + partialPnl) * 100) / 100;
+
+    var result = totalPnl === null ? 'Open' : (Math.abs(totalPnl) < 0.01 ? 'Breakeven' : (totalPnl > 0 ? 'Win' : 'Loss'));
+
+    var trade = {
+      id: APP.editingId || APP.nextId++,
+      symbol: symbol,
+      side: sideVal,
+      entryDate: entryDate,
+      entryTime: document.getElementById('f_entryTime').value || '',
+      entryPrice: entry,
+      quantity: qty,
+      leverage: lev,
+      stopLoss: sl,
+      targetPrice: tgt,
+      rrRatio: rrRatio,
+      exitPrice: exit,
+      snapshots: getSnapshots(),
+      // legacy fields kept for Sheet Sync compatibility
+      p5: null, p10: null, p20: null, p30: null,
+      partials: partials,
+      partialPnl: partialPnl,
+      pnl: totalPnl,
+      result: result,
+      remarks: document.getElementById('f_remarks').value.trim()
+    };
+
+    if(APP.editingId){
+      APP.trades = APP.trades.map(t => t.id === APP.editingId ? trade : t);
+      showToast('Trade #' + APP.editingId + ' updated');
+    } else {
+      APP.trades.push(trade);
+      showToast('Trade #' + trade.id + ' added');
+    }
+
+    saveToStorage();
+    closeTradeModal();
+    renderAll();
+  }
+
+  function deleteTrade(id){
+    if(!confirm('Delete trade #' + id + '?')) return;
+    APP.trades = APP.trades.filter(t => t.id !== id);
+    saveToStorage();
+    renderAll();
+    showToast('Trade deleted');
+  }
+
+  // ===== FILTERING & RENDERING =====
+  function getFiltered(){
+    var fromDate = document.getElementById('filterFromDate').value;
+    var toDate = document.getElementById('filterToDate').value;
+    var side = document.getElementById('filterSide').value;
+    var result = document.getElementById('filterResult').value;
+
+    return APP.trades.filter(t => {
+      if(fromDate && t.entryDate < fromDate) return false;
+      if(toDate && t.entryDate > toDate) return false;
+      if(side && t.side !== side) return false;
+      if(result && t.result !== result) return false;
+      return true;
+    });
+  }
+
+  function renderAll(){
+    renderMetrics();
+    renderTable();
+    renderCharts();
+    document.getElementById('storageStatus').textContent = 'Saved locally';
+  }
+
+  function renderMetrics(){
+    var closed = APP.trades.filter(t => t.pnl !== null);
+    var totalPnl = closed.reduce((s, t) => s + (t.pnl || 0), 0);
+    var wins = closed.filter(t => t.pnl > 0).length;
+    var losses = closed.filter(t => t.pnl < 0).length;
+    var winRate = closed.length ? (wins / closed.length * 100) : 0;
+    var avgWin = wins ? closed.filter(t => t.pnl > 0).reduce((s,t) => s+t.pnl, 0) / wins : 0;
+    var avgLoss = losses ? closed.filter(t => t.pnl < 0).reduce((s,t) => s+t.pnl, 0) / losses : 0;
+
+    // Avg R:R — only trades that have a rrRatio stored
+    var rrTrades = APP.trades.filter(t => t.rrRatio !== null && t.rrRatio !== undefined);
+    var avgRR = rrTrades.length ? rrTrades.reduce((s,t) => s + t.rrRatio, 0) / rrTrades.length : null;
+    var rrColor = avgRR === null ? '' : avgRR >= 2 ? 'color:var(--profit)' : avgRR >= 1 ? 'color:var(--open)' : 'color:var(--loss)';
+    var rrDisplay = avgRR !== null ? '1 : ' + avgRR.toFixed(2) : '—';
+
+    var html = `
+      <div class="metric-card">
+        <div class="metric-label">Total Trades</div>
+        <div class="metric-value">${APP.trades.length}</div>
+        <div class="metric-sub">${closed.length} closed</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Net P&L</div>
+        <div class="metric-value ${totalPnl > 0 ? 'pos' : totalPnl < 0 ? 'neg' : ''}">₹${totalPnl.toFixed(2)}</div>
+        <div class="metric-sub">${closed.length} closed trades</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Win Rate</div>
+        <div class="metric-value">${winRate.toFixed(1)}%</div>
+        <div class="metric-sub">${wins}W / ${losses}L</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Avg Win</div>
+        <div class="metric-value pos">₹${avgWin.toFixed(2)}</div>
+        <div class="metric-sub">per win</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Avg Loss</div>
+        <div class="metric-value neg">₹${avgLoss.toFixed(2)}</div>
+        <div class="metric-sub">per loss</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Avg R:R Ratio</div>
+        <div class="metric-value" style="${rrColor}">${rrDisplay}</div>
+        <div class="metric-sub">${rrTrades.length} trades w/ R:R</div>
+      </div>
+    `;
+    document.getElementById('metricsRow').innerHTML = html;
+  }
+
+  function renderTable(){
+    var filtered = getFiltered();
+    var html = COLS.map((col, i) => `<th>${col}</th>`).join('');
+    document.getElementById('tableHead').innerHTML = '<tr>' + html + '<th>Actions</th></tr>';
+
+    if(!filtered.length){
+      document.getElementById('tableBody').innerHTML = '';
+      document.getElementById('emptyState').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('rowCountLabel').textContent = filtered.length + ' trade' + (filtered.length === 1 ? '' : 's');
+
+    var rows = filtered.map(t => {
+      // RR badge
+      var rrHtml = '—';
+      if(t.rrRatio !== null && t.rrRatio !== undefined){
+        var rrCls = t.rrRatio >= 2 ? 'rr-good' : t.rrRatio >= 1 ? 'rr-neutral' : 'rr-bad';
+        rrHtml = `<span class="rr-badge ${rrCls}">1:${t.rrRatio.toFixed(2)}</span>`;
+      }
+      // Partials badge
+      var partHtml = '—';
+      if(t.partials && t.partials.length){
+        partHtml = `<button class="btn btn-sm btn-ghost" onclick="window.togglePartials(${t.id})" title="View ${t.partials.length} partial booking(s)"><i class="ti ti-layers-intersect"></i> ${t.partials.length}</button>`;
+      }
+      return `
+      <tr id="tr_${t.id}">
+        <td class="cell-sans">${t.id}</td>
+        <td class="cell-sans" style="font-weight:600;">${t.symbol}</td>
+        <td><span class="badge ${t.side === 'Buy' ? 'badge-buy' : 'badge-sell'}">${t.side}</span></td>
+        <td>${t.entryDate}</td>
+        <td>${t.entryTime || '—'}</td>
+        <td>${t.entryPrice.toFixed(2)}</td>
+        <td>${t.quantity || '—'}</td>
+        <td>${t.leverage ? t.leverage + 'x' : '—'}</td>
+        <td>${t.stopLoss ? t.stopLoss.toFixed(2) : '—'}</td>
+        <td>${t.targetPrice ? t.targetPrice.toFixed(2) : '—'}</td>
+        <td>${rrHtml}</td>
+        <td colspan="4" style="font-size:11px;">${(function(){
+          var snaps = t.snapshots && t.snapshots.length ? t.snapshots : [
+            t.p5  ? {min:'5',  price:t.p5}  : null,
+            t.p10 ? {min:'10', price:t.p10} : null,
+            t.p20 ? {min:'20', price:t.p20} : null,
+            t.p30 ? {min:'30', price:t.p30} : null,
+          ].filter(Boolean);
+          if(!snaps.length) return '—';
+          return snaps.map(function(s){ return '<span style="display:inline-block;background:var(--bg-elev-2);border:1px solid var(--border-soft);border-radius:4px;padding:1px 6px;margin:1px;font-family:var(--mono);">@'+s.min+'m: '+parseFloat(s.price).toFixed(2)+'</span>'; }).join(' ');
+        })()}</td>
+        <td>${t.exitPrice ? t.exitPrice.toFixed(2) : '—'}</td>
+        <td class="cell-sans" style="font-weight:600;${t.pnl > 0 ? 'color:var(--profit)' : t.pnl < 0 ? 'color:var(--loss)' : ''}">${t.pnl !== null ? '₹' + t.pnl.toFixed(2) : '—'}</td>
+        <td>${partHtml}</td>
+        <td><span class="badge ${t.result === 'Win' ? 'badge-win' : t.result === 'Loss' ? 'badge-loss' : t.result === 'Breakeven' ? 'pos' : 'badge-open'}">${t.result}</span></td>
+        <td class="cell-sans" style="color:var(--text-faint);max-width:150px;overflow:hidden;text-overflow:ellipsis;" title="${t.remarks}">${t.remarks || '—'}</td>
+        <td><button class="btn btn-sm" onclick="window.editTrade(${t.id})"><i class="ti ti-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="window.deleteTrade(${t.id})"><i class="ti ti-trash"></i></button></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('tableBody').innerHTML = rows;
+  }
+
+  function renderCharts(){
+    var closed = APP.trades.filter(t => t.pnl !== null).sort((a,b) => (a.entryDate+a.entryTime).localeCompare(b.entryDate+b.entryTime));
+    
+    // Equity curve
+    var cum = 0;
+    var eqLabels = closed.map((t,i) => '#'+(i+1));
+    var eqData = closed.map(t => { cum += t.pnl; return cum; });
+
+    if(window.eqChart) window.eqChart.destroy();
+    window.eqChart = new Chart(document.getElementById('equityChart'), {
+      type:'line',
+      data:{ labels: eqLabels.length ? eqLabels : ['—'], datasets:[{
+        label:'Cumulative P&L',
+        data: eqData.length ? eqData : [0],
+        borderColor:'#4C8DFF',
+        backgroundColor:'rgba(76,141,255,0.08)',
+        fill:true, tension:0.25, pointRadius:0, borderWidth:2
+      }]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:'#1F242D'}}, y:{grid:{color:'#1F242D'}}},
+      }
+    });
+
+    // Win/Loss
+    var wins = closed.filter(t => t.pnl > 0).length;
+    var losses = closed.filter(t => t.pnl < 0).length;
+    var be = closed.length - wins - losses;
+
+    if(window.wlChart) window.wlChart.destroy();
+    window.wlChart = new Chart(document.getElementById('winLossChart'), {
+      type:'doughnut',
+      data:{ labels:['Win','Loss','Breakeven'],
+        datasets:[{ data:[wins,losses,be], backgroundColor:['#2BA66C','#E0524D','#5C6472'], borderWidth:0 }]},
+      options:{responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{legend:{display:false}}}
+    });
+  }
+
+  // ===== SHEET SYNC =====
+  function pullFromSheet(){
+    showToast('Pulling from sheet...');
+    fetch(APP.sheetUrl + '?action=list&token=' + APP.token)
+      .then(r => r.json())
+      .then(res => {
+        if(res.trades){
+          APP.trades = res.trades.map((row, idx) => ({
+            id: parseInt(row[0]) || (idx+1),
+            symbol: row[1] || '',
+            side: row[2] || 'Buy',
+            entryDate: row[3] || '',
+            entryTime: row[4] || '',
+            entryPrice: parseFloat(row[5]) || 0,
+            quantity: row[6] ? parseFloat(row[6]) : null,
+            leverage: row[7] ? parseFloat(row[7]) : null,
+            stopLoss: row[8] ? parseFloat(row[8]) : null,
+            targetPrice: row[9] ? parseFloat(row[9]) : null,
+            p5: row[10] ? parseFloat(row[10]) : null,
+            p10: row[11] ? parseFloat(row[11]) : null,
+            p20: row[12] ? parseFloat(row[12]) : null,
+            p30: row[13] ? parseFloat(row[13]) : null,
+            exitPrice: row[14] ? parseFloat(row[14]) : null,
+            pnl: row[15] ? parseFloat(row[15]) : null,
+            result: row[16] || 'Open',
+            remarks: row[17] || ''
+          }));
+          APP.nextId = Math.max(...APP.trades.map(t => t.id), 0) + 1;
+          saveToStorage();
+          renderAll();
+          document.getElementById('sheetModalOverlay').classList.remove('show');
+          showToast('Pulled ' + APP.trades.length + ' trades');
+        }
+      })
+      .catch(err => showToast('Error: ' + err.message, true));
+  }
+
+  function pushToSheet(){
+    showToast('Pushing to sheet...');
+    var rows = APP.trades.map(t => [t.id, t.symbol, t.side, t.entryDate, t.entryTime, t.entryPrice, t.quantity, t.leverage, t.stopLoss, t.targetPrice, t.p5, t.p10, t.p20, t.p30, t.exitPrice, t.pnl, t.result, t.remarks]);
+    
+    fetch(APP.sheetUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        action: 'replaceAll',
+        rows: JSON.stringify(rows),
+        token: APP.token
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      if(res.ok){
+        document.getElementById('sheetModalOverlay').classList.remove('show');
+        showToast('Pushed ' + rows.length + ' trades');
+      } else {
+        showToast(res.error || 'Failed', true);
+      }
+    })
+    .catch(err => showToast('Error: ' + err.message, true));
+  }
+
+  // ===== USER MANAGEMENT =====
+  function loadUsers(){
+    fetch(APP.sheetUrl + '?action=getUsers&token=' + APP.token)
+      .then(r => r.json())
+      .then(res => {
+        if(res.users){
+          var html = res.users.map(u => `
+            <div class="user-item">
+              <span class="email">${u.userId}</span>
+              ${u.isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}
+              <button class="btn btn-sm btn-danger" onclick="window.removeUser('${u.userId}')">Remove</button>
+            </div>
+          `).join('');
+          document.getElementById('usersList').innerHTML = html;
+        }
+      })
+      .catch(err => showToast('Error loading users', true));
+  }
+
+  function addUser(){
+    var userId = document.getElementById('newUserId').value.trim();
+    var password = document.getElementById('newUserPassword').value;
+    var isAdmin = document.getElementById('newUserIsAdmin').checked;
+    if(!userId) return showToast('Enter User ID', true);
+    if(!password) return showToast('Enter password', true);
+
+    fetch(APP.sheetUrl + '?action=addUser&userId=' + encodeURIComponent(userId) + '&password=' + encodeURIComponent(password) + '&isAdmin=' + isAdmin + '&token=' + APP.token)
+      .then(r => r.json())
+      .then(res => {
+        if(res.ok){
+          document.getElementById('newUserId').value = '';
+          document.getElementById('newUserPassword').value = '';
+          document.getElementById('newUserIsAdmin').checked = false;
+          loadUsers();
+          showToast('User added');
+        } else {
+          showToast(res.error || 'Failed', true);
+        }
+      })
+      .catch(err => showToast('Error', true));
+  }
+
+  window.removeUser = function(email){
+    if(!confirm('Remove ' + email + '?')) return;
+    fetch(APP.sheetUrl + '?action=removeUser&removeUserId=' + encodeURIComponent(email) + '&token=' + APP.token)
+      .then(r => r.json())
+      .then(res => {
+        if(res.ok){
+          loadUsers();
+          showToast('User removed');
+        } else {
+          showToast(res.error || 'Failed', true);
+        }
+      })
+      .catch(err => showToast('Error', true));
+  };
+
+  // ===== STORAGE =====
+  function saveToStorage(){
+    localStorage.setItem('tradelog_trades', JSON.stringify(APP.trades));
+    localStorage.setItem('tradelog_nextId', APP.nextId);
+  }
+
+  function loadTradesFromStorage(){
+    var stored = localStorage.getItem('tradelog_trades');
+    if(stored){
+      APP.trades = JSON.parse(stored);
+      APP.nextId = parseInt(localStorage.getItem('tradelog_nextId')) || (Math.max(...APP.trades.map(t => t.id), 0) + 1);
+    }
+  }
+
+  function exportCsv(){
+    if(!APP.trades.length) return showToast('No trades', true);
+    var csv = COLS.concat(['P&L','Result','Remarks']).join(',') + '\n';
+    csv += APP.trades.map(t => [t.id, t.symbol, t.side, t.entryDate, t.entryTime, t.entryPrice, t.quantity, t.leverage, t.stopLoss, t.targetPrice, t.p5, t.p10, t.p20, t.p30, t.exitPrice, t.pnl, t.result, t.remarks].map(v => v===null||v===undefined?'':'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+    var blob = new Blob([csv], {type:'text/csv'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'trades-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    showToast('Exported');
+  }
+
+
+  // ===== PINE SCRIPT GENERATOR =====
+  function openPineModal(){
+    // Populate symbol filter
+    var symbols = [...new Set(APP.trades.map(t => t.symbol).filter(Boolean))].sort();
+    var sel = document.getElementById('pineSymbolFilter');
+    sel.innerHTML = '<option value="">All Symbols</option>' + symbols.map(s => `<option value="${s}">${s}</option>`).join('');
+    document.getElementById('pineOutput').value = '';
+    document.getElementById('pineModalOverlay').classList.add('show');
+  }
+
+  function generatePineScript(){
+    var symbolFilter = document.getElementById('pineSymbolFilter').value;
+    var exchange = document.getElementById('pineExchange').value;
+    var trades = APP.trades.filter(t => !symbolFilter || t.symbol === symbolFilter);
+
+    if(!trades.length){
+      showToast('No trades to export', true);
+      return;
+    }
+
+    // Build arrays for Pine Script
+    var entryDates = [], entryTimes = [], entryPrices = [], exitPrices = [];
+    var stopLosses = [], targets = [], pnls = [], results = [], sides = [], symbols = [], remarks = [];
+
+    trades.forEach(function(t){
+      var dateStr = t.entryDate ? t.entryDate.replace(/-/g, '') : '20240101';
+      var timeStr = t.entryTime ? t.entryTime.replace(':', '') + '00' : '093000';
+      entryDates.push('"' + dateStr + '"');
+      entryTimes.push('"' + timeStr + '"');
+      entryPrices.push(t.entryPrice ? t.entryPrice.toFixed(2) : 'na');
+      exitPrices.push(t.exitPrice ? t.exitPrice.toFixed(2) : 'na');
+      stopLosses.push(t.stopLoss ? t.stopLoss.toFixed(2) : 'na');
+      targets.push(t.targetPrice ? t.targetPrice.toFixed(2) : 'na');
+      pnls.push(t.pnl !== null ? t.pnl.toFixed(2) : 'na');
+      results.push('"' + (t.result || 'Open') + '"');
+      sides.push('"' + (t.side || 'Buy') + '"');
+      var sym = exchange ? exchange + ':' + (t.symbol || 'NIFTY') : (t.symbol || 'NIFTY');
+      symbols.push('"' + sym + '"');
+      remarks.push('"' + (t.remarks || '').replace(/"/g, "'").substring(0,40) + '"');
+    });
+
+    var n = trades.length;
+
+    var pine = `//@version=5
+indicator("Trade Log — ${symbolFilter || 'All Symbols'}", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// ═══════════════════════════════════════════
+// TRADE LOG INDICATOR — Generated by Trade Log Dashboard
+// Trades: ${n} | Symbol: ${symbolFilter || 'All'} | Date: ${new Date().toLocaleDateString()}
+// ═══════════════════════════════════════════
+
+// ── Settings ──
+showEntry     = input.bool(true,  "Show Entry Markers")
+showExit      = input.bool(true,  "Show Exit Markers")
+showSL        = input.bool(true,  "Show Stop Loss Lines")
+showTarget    = input.bool(true,  "Show Target Lines")
+showPnL       = input.bool(true,  "Show P&L Labels")
+showArrows    = input.bool(true,  "Show Win/Loss Arrows")
+labelSize     = input.string("small", "Label Size", options=["tiny","small","normal","large"])
+
+// ── Colours ──
+C_WIN   = color.new(color.green,  0)
+C_LOSS  = color.new(color.red,    0)
+C_OPEN  = color.new(color.orange, 0)
+C_BE    = color.new(color.gray,   0)
+C_SL    = color.new(color.red,    60)
+C_TGT   = color.new(color.green,  60)
+C_ENTRY = color.new(color.blue,   0)
+
+// ── Data Arrays ──
+var entryDateArr = array.from([${entryDates.join(',')}])
+var entryTimeArr = array.from([${entryTimes.join(',')}])
+var entryPriceArr = array.from([${entryPrices.join(',')}])
+var exitPriceArr  = array.from([${exitPrices.join(',')}])
+var slArr         = array.from([${stopLosses.join(',')}])
+var tgtArr        = array.from([${targets.join(',')}])
+var pnlArr        = array.from([${pnls.join(',')}])
+var resultArr     = array.from([${results.join(',')}])
+var sideArr       = array.from([${sides.join(',')}])
+var remarkArr     = array.from([${remarks.join(',')}])
+
+// ── Helpers ──
+getColor(res) =>
+    res == "Win"       ? C_WIN  :
+    res == "Loss"      ? C_LOSS :
+    res == "Breakeven" ? C_BE   : C_OPEN
+
+getLabelSize(s) =>
+    s == "tiny"   ? size.tiny   :
+    s == "small"  ? size.small  :
+    s == "normal" ? size.normal : size.large
+
+// ── Draw trades ──
+var drawn = array.new_bool(${n}, false)
+
+if barstate.islast
+    for i = 0 to ${n - 1}
+        if not array.get(drawn, i)
+            eDate  = array.get(entryDateArr, i)
+            eTime  = array.get(entryTimeArr, i)
+            ePrice = array.get(entryPriceArr, i)
+            xPrice = array.get(exitPriceArr, i)
+            sl     = array.get(slArr, i)
+            tgt    = array.get(tgtArr, i)
+            pnl    = array.get(pnlArr, i)
+            res    = array.get(resultArr, i)
+            side   = array.get(sideArr, i)
+            rmk    = array.get(remarkArr, i)
+            clr    = getColor(res)
+            sz     = getLabelSize(labelSize)
+
+            // Parse date/time → timestamp
+            yr  = str.tonumber(str.substring(eDate, 0, 4))
+            mo  = str.tonumber(str.substring(eDate, 4, 6))
+            dy  = str.tonumber(str.substring(eDate, 6, 8))
+            hr  = str.tonumber(str.substring(eTime, 0, 2))
+            mn  = str.tonumber(str.substring(eTime, 2, 4))
+            ts  = timestamp(int(yr), int(mo), int(dy), int(hr), int(mn))
+
+            // Entry marker
+            if showEntry and not na(ePrice)
+                entryStyle = side == "Buy" ? label.style_label_up : label.style_label_down
+                entryClr   = side == "Buy" ? C_WIN : C_LOSS
+                label.new(ts, ePrice,
+                     text   = (side == "Buy" ? "▲ " : "▼ ") + str.tostring(ePrice),
+                     color  = entryClr,
+                     textcolor = color.white,
+                     style  = entryStyle,
+                     size   = sz,
+                     tooltip = "Entry | " + side + " @ " + str.tostring(ePrice) + (rmk != "" ? "\n" + rmk : ""))
+
+            // Exit marker + P&L label
+            if showExit and not na(xPrice)
+                exitStyle = side == "Buy" ? label.style_label_down : label.style_label_up
+                pnlText = not na(pnl) ? (pnl >= 0 ? "✅ +" : "❌ ") + str.tostring(math.round(pnl, 2)) : ""
+                exitLabel = str.tostring(xPrice) + (showPnL and pnlText != "" ? "\n" + pnlText : "")
+                label.new(ts + 60000, xPrice,
+                     text      = exitLabel,
+                     color     = clr,
+                     textcolor = color.white,
+                     style     = exitStyle,
+                     size      = sz,
+                     tooltip   = "Exit @ " + str.tostring(xPrice) + " | " + res)
+
+            // Win/Loss Arrow
+            if showArrows
+                arrowClr = res == "Win" ? C_WIN : res == "Loss" ? C_LOSS : C_BE
+                if not na(ePrice)
+                    arrowStyle = res == "Win" ? label.style_arrowup : label.style_arrowdown
+                    arrowY = res == "Win" ? ePrice * 0.998 : ePrice * 1.002
+                    label.new(ts, arrowY,
+                         text  = "",
+                         color = arrowClr,
+                         style = arrowStyle,
+                         size  = size.normal)
+
+            // Stop Loss line
+            if showSL and not na(sl)
+                line.new(ts, sl, ts + 3600000 * 4, sl,
+                     color = C_SL, width = 1, style = line.style_dashed)
+                label.new(ts + 3600000 * 2, sl,
+                     text  = "SL " + str.tostring(sl),
+                     color = C_SL, textcolor = color.white,
+                     style = label.style_label_right, size = size.tiny)
+
+            // Target line
+            if showTarget and not na(tgt)
+                line.new(ts, tgt, ts + 3600000 * 4, tgt,
+                     color = C_TGT, width = 1, style = line.style_dashed)
+                label.new(ts + 3600000 * 2, tgt,
+                     text  = "TGT " + str.tostring(tgt),
+                     color = C_TGT, textcolor = color.white,
+                     style = label.style_label_right, size = size.tiny)
+
+            array.set(drawn, i, true)
+`;
+
+    document.getElementById('pineOutput').value = pine;
+    showToast('Pine Script generated for ' + n + ' trades!');
+  }
+
+  function copyPineScript(){
+    var ta = document.getElementById('pineOutput');
+    if(!ta.value){ showToast('Generate first!', true); return; }
+    navigator.clipboard.writeText(ta.value).then(function(){
+      showToast('Copied! Paste into TradingView Pine Editor');
+    }).catch(function(){
+      ta.select();
+      document.execCommand('copy');
+      showToast('Copied!');
+    });
+  }
+
+  // ===== GLOBAL FUNCTIONS =====
+  window.editTrade = function(id){ openTradeModal(id); };
+  window.deleteTrade = function(id){ deleteTrade(id); };
+  window.togglePartials = function(id){
+    var existing = document.getElementById('partials_expand_' + id);
+    if(existing){ existing.remove(); return; }
+    var t = APP.trades.find(x => x.id === id);
+    if(!t || !t.partials || !t.partials.length) return;
+    var cols = document.querySelectorAll('#tableHead tr th').length;
+    var totalPartialPnl = t.partialPnl !== null && t.partialPnl !== undefined ? t.partialPnl : 0;
+    var tags = t.partials.map(function(p, i){
+      var diff = t.side === 'Sell' ? (t.entryPrice - p.price) : (p.price - t.entryPrice);
+      var pPnl = Math.round(diff * p.qty * (t.leverage || 1) * 100) / 100;
+      var c = pPnl >= 0 ? 'var(--profit)' : 'var(--loss)';
+      return `<span class="partial-tag">
+        #${i+1} &nbsp;
+        <span style="color:var(--text-mute)">${p.date||''} ${p.time||''}</span> &nbsp;
+        Exit: <strong>${p.price}</strong> &nbsp;
+        Qty: <strong>${p.qty}</strong> &nbsp;
+        P&L: <strong style="color:${c}">₹${pPnl.toFixed(2)}</strong>
+      </span>`;
+    }).join('');
+    var pnlColor = totalPartialPnl >= 0 ? 'var(--profit)' : 'var(--loss)';
+    var expandRow = document.createElement('tr');
+    expandRow.id = 'partials_expand_' + id;
+    expandRow.className = 'partials-expand';
+    expandRow.innerHTML = `<td colspan="${cols}">
+      <div style="padding:4px 0 8px;">
+        <div style="font-size:11px;color:var(--text-mute);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;"><i class="ti ti-scissors"></i> Partial Bookings</div>
+        <div>${tags}</div>
+        <div class="pnl-summary">Total Partial P&L: <strong style="color:${pnlColor}">₹${totalPartialPnl.toFixed(2)}</strong></div>
+      </div>
+    </td>`;
+    var trEl = document.getElementById('tr_' + id);
+    if(trEl && trEl.nextSibling) trEl.parentNode.insertBefore(expandRow, trEl.nextSibling);
+    else if(trEl) trEl.parentNode.appendChild(expandRow);
+  };
+
+  // ===== INIT =====
+  function init(){
+    // Clear any stale session so login always runs fresh against the new URL
+    localStorage.removeItem('tradelog_token');
+    localStorage.removeItem('tradelog_email');
+    localStorage.removeItem('tradelog_isAdmin');
+    localStorage.removeItem('tradelog_sheetUrl');
+    initLogin();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
